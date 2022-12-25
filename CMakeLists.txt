@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 2.6)
+cmake_minimum_required(VERSION 3.10)
 project(monitor)
 
 find_package(Curses REQUIRED)
@@ -10,6 +10,7 @@ file(GLOB SOURCES "src/*.cpp")
 add_executable(monitor ${SOURCES})
 
 set_property(TARGET monitor PROPERTY CXX_STANDARD 17)
-target_link_libraries(monitor ${CURSES_LIBRARIES})
+target_link_libraries(monitor ${CURSES_LIBRARIES} stdc++fs)
+
 # TODO: Run -Werror in CI.
-target_compile_options(monitor PRIVATE -Wall -Wextra)
+target_compile_options(monitor PRIVATE -Wall -Wextra -Werror)
