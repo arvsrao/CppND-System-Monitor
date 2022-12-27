@@ -51,7 +51,7 @@ string LinuxParser::Kernel() {
   return kernel;
 }
 
-// BONUS: Update this to use std::filesystem
+/** Extract all the PIDs from the folder names in '/proc/'. */
 vector<int> LinuxParser::Pids() {
   vector<int> pids;
   const fs::path procDirectory(kProcDirectory);
@@ -67,6 +67,7 @@ vector<int> LinuxParser::Pids() {
     }
   }
 
+  std::sort(pids.begin(), pids.end(), [](int a, int b) { return a < b;});
   return pids;
 }
 
@@ -180,7 +181,7 @@ string LinuxParser::Command(int pid) {
   return line;
 }
 
-/** Read and return the memory used by a process */
+/** Read and return the memory (in KBs) used by a process */
 string LinuxParser::Ram(int pid) {
   string line, key, vmSize;
   std::ifstream filestream(kProcDirectory + std::to_string(pid) + kStatusFilename);
