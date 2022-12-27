@@ -34,7 +34,7 @@ std::vector<float> Processor::ComputeIdleAndTotal() {
   return {Idle, Idle + NonIdle};
 }
 
-/** Return the aggregate CPU utilization.
+/** Return the aggregate CPU utilization as a percentage.
  *
  * Formula for Utilization taken from https://stackoverflow.com/a/23376195
  * */
@@ -47,7 +47,7 @@ float Processor::Utilization() {
   prevIdle_  = curr[0];
   prevTotal_ = curr[1];
 
-  // divid-by-zero guard
+  // divide-by-zero guard. In the non-degenerate case the CPU is a percentage.
   return (totald > 0) ? (totald - idled) / totald : 0.f;
 }
 

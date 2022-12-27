@@ -22,7 +22,6 @@ class Process {
   // constructor
   explicit Process(int pid);
 
-  // TODO: Declare any necessary private members
  private:
 
   // forbid use of default constructor
