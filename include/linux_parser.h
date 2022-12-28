@@ -20,11 +20,20 @@ const std::string kVersionFilename{"/version"};
 const std::string kOSPath{"/etc/os-release"};
 const std::string kPasswordPath{"/etc/passwd"};
 
+// keys to parse
+const std::string processesKey("processes");
+const std::string runningProcessesKey("procs_running");
+const std::string memTotalKey("MemTotal:");
+const std::string memFreeKey("MemFree:");
+const std::string cpuKey("cpu");
+const std::string uidKey("Uid:");
+const std::string physicalMemUsedKey("VmRSS:");
+
 // System
 float MemoryUtilization();
 long UpTime();
 std::vector<int> Pids();
-int GetNumberOfProcesses(std::string const& matchKey);
+int ParseIntFromStatsFile(std::string const& matchKey);
 int TotalProcesses();
 int RunningProcesses();
 std::string OperatingSystem();
@@ -50,7 +59,6 @@ long TotalTime(int pid);
 std::string Command(int pid);
 std::string Ram(int pid);
 std::string Uid(int pid);
-//std::string User(int pid);
 long int UpTime(int pid);
 std::map<std::string, std::string> buildMap();
 };  // namespace LinuxParser

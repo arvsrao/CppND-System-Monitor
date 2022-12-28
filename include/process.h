@@ -12,7 +12,7 @@ class Process {
  public:
   int Pid() const;
   std::string User() const;
-  std::string Command();
+  std::string Command() const;
   float CpuUtilization() const;
   std::string Ram() const;
   long int UpTime() const;
@@ -26,6 +26,9 @@ class Process {
 
   // forbid use of default constructor
   Process();
+
+  // truncate a command if necessary
+  static std::string truncateCommand(const std::string& cmd);
 
   static const std::map<std::string, std::string> uidToUsernameMap;
   int pid_;

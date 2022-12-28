@@ -13,9 +13,17 @@ using std::map;
 using std::to_string;
 using std::vector;
 using UidUserPair = std::pair<std::string, std::string>;
-namespace fs = std::experimental::filesystem;
 
-// DONE: An example of how to read data from the filesystem
+// check if a higher version of g++ is required
+# if __has_include(<filesystem>)
+  #include <filesystem>
+  namespace fs = std::filesystem;
+# else // works for virtual machine version ==> requires target_link_libraries(... stdc++fs) in 13:CMakeLists.txt
+  #include <experimental/filesystem>
+  namespace fs = std::experimental::filesystem;
+# endif
+
+/** Read pretty formatted version of OS from the filesystem. */
 string LinuxParser::OperatingSystem() {
   string line;
   string key;
@@ -38,7 +46,7 @@ string LinuxParser::OperatingSystem() {
   return value;
 }
 
-// DONE: An example of how to read data from the filesystem
+/** Read kernel of OS from the filesystem. */
 string LinuxParser::Kernel() {
   string os, kernel, version;
   string line;
@@ -67,7 +75,6 @@ vector<int> LinuxParser::Pids() {
     }
   }
 
-  std::sort(pids.begin(), pids.end(), [](int a, int b) { return a < b;});
   return pids;
 }
 
@@ -81,12 +88,12 @@ float LinuxParser::MemoryUtilization() {
     while (std::getline(filestream, line)) {
       std::istringstream linestream(line);
       while (linestream >> key >> value) {
-        if (key == "MemTotal:") memTotal = (float) stoi(value);
-        if (key == "MemFree:") memFree   = (float) stoi(value);
+        if (key == memTotalKey) memTotal = (float) stoi(value);
+        if (key == memFreeKey)  memFree  = (float) stoi(value);
       }
     }
   }
-  return memFree / memTotal;
+  return 1.f - (memFree / memTotal);
 }
 
 /** Read and return the system uptime (in seconds) */
@@ -96,12 +103,11 @@ long LinuxParser::UpTime() {
   if (filestream.is_open()) {
     while (std::getline(filestream, line)) {
       std::istringstream linestream(line);
-      while (linestream >> uptime >> idle) {
-        return stol(uptime);
+      linestream >> uptime;
+      return stol(uptime);
       }
     }
-  }
-  return 0;
+    return 0;
 }
 
 /** Read and parse CPU utilization from '/proc/stat' */
@@ -113,7 +119,7 @@ vector<string> LinuxParser::CpuUtilization() {
     while (std::getline(filestream, line)) {
       std::istringstream linestream(line);
       while (linestream >> key >> user >> nice >> system >> idle >> iowait >> irq >> softirq >> steal >> guest >> guest_nice) {
-        if (key == "cpu") {
+        if (key == cpuKey) {
           return { user, nice, system, idle, iowait, irq, softirq, steal, guest, guest_nice };
         }
       }
@@ -145,7 +151,7 @@ long LinuxParser::TotalTime(int pid) {
  * @param matchKey identifies the row in 'proc/stat' to parse
  * @return -1 if there is NO key match or value is not an integer
  * */
-int LinuxParser::GetNumberOfProcesses(string const& matchKey) {
+int LinuxParser::ParseIntFromStatsFile(string const& matchKey) {
   string line, key, total;
   std::ifstream filestream(kProcDirectory + kStatFilename);
   if (filestream.is_open()) {
@@ -163,12 +169,12 @@ int LinuxParser::GetNumberOfProcesses(string const& matchKey) {
 
 /** Read and return the total number of processes */
 int LinuxParser::TotalProcesses() {
-  return LinuxParser::GetNumberOfProcesses("processes");
+  return LinuxParser::ParseIntFromStatsFile(processesKey);
 }
 
 /** Read and return the number of running processes */
 int LinuxParser::RunningProcesses() {
-  return LinuxParser::GetNumberOfProcesses("procs_running");
+  return LinuxParser::ParseIntFromStatsFile(runningProcessesKey);
 }
 
 /** Read and return the command associated with a process */
@@ -183,13 +189,14 @@ string LinuxParser::Command(int pid) {
 
 /** Read and return the memory (in KBs) used by a process */
 string LinuxParser::Ram(int pid) {
-  string line, key, vmSize;
+  string line, key, VmRSS;
   std::ifstream filestream(kProcDirectory + std::to_string(pid) + kStatusFilename);
   if (filestream.is_open()) {
     while (std::getline(filestream, line)) {
       std::istringstream linestream(line);
-      while (linestream >> key >> vmSize) {
-        if (key == "VmSize:") return vmSize;
+      while (linestream >> key >> VmRSS) {
+        // VmRSS gives the exact physical memory. See definition at https://man7.org/linux/man-pages/man5/proc.5.html
+        if (key == physicalMemUsedKey) return VmRSS;
       }
     }
   }
@@ -204,18 +211,14 @@ string LinuxParser::Uid(int pid) {
       while (std::getline(filestream, line)) {
         std::istringstream linestream(line);
         while (linestream >> key >> uid) {
-          if (key == "Uid:") return uid;
+          if (key == uidKey) return uid;
         }
       }
     }
     return "";
 }
 
-///** Read and return the user associated with a process */
-//string LinuxParser::User(int pid) {
-//    string uid = LinuxParser::Uid(pid);
-//}
-
+/** Build a map from UID => Username */
 std::map<string, string> LinuxParser::buildMap() {
   std::map<string, string> uidToUsernameMap;
   string line, username, uid, x ;

@@ -16,7 +16,7 @@ const std::map<std::string, std::string> Process::uidToUsernameMap = LinuxParser
 Process::Process(int pid) : pid_(pid),
                             start_time_(LinuxParser::UpTime(pid)),
                             user_(uidToUsernameMap.at(LinuxParser::Uid(pid))),
-                            command_(LinuxParser::Command(pid)) {}
+                            command_(truncateCommand(LinuxParser::Command(pid))) {}
 
 /** Forbid use of the default constructor; the default constructor is set private */
 Process::Process() {}
@@ -30,7 +30,13 @@ float Process::CpuUtilization() const {
 }
 
 /** Return the command that generated this process */
-string Process::Command() { return command_; }
+string Process::Command() const { return command_; }
+
+/** Truncate command if necessary */
+std::string Process::truncateCommand(const std::string& cmd) {
+  const size_t COMMAND_LENGTH = 50;
+  return (cmd.length() > COMMAND_LENGTH) ? cmd.substr(0,COMMAND_LENGTH) + "..." : cmd;
+}
 
 /** Return this process's memory utilization */
 string Process::Ram() const {
